@@ -123,8 +123,8 @@ flowchart TD
         D2 -- yes --> Z2(["log.Fatalln, exit 1"])
         D2 -- "no, clean EOF" --> D3{"-s set?"}
         D3 -- yes --> D3a{"pipe supports\nCloseWrite()?"}
-        D3a -- "yes (message-mode pipe)" --> D3b["conn.CloseWrite()"]
-        D3a -- "no (byte-mode pipe)" --> D3c["conn.Write(nil)\n(reaches the real syscall here)"]
+        D3a -- "yes (message-mode pipe)" --> D3b["conn.CloseWrite():\nactually signals end-of-data"]
+        D3a -- "no (byte-mode pipe --\nincludes this binary's own\nagent pipe)" --> D3c["warn on stderr:\n-s has no effect on this pipe\n(reaches the real syscall, but\nbyte-mode pipes never deliver\na zero-length write to the reader)"]
         D3b --> D4
         D3c --> D4
         D3 -- no --> D4{"-ei set?"}
@@ -145,7 +145,9 @@ flowchart TD
     E4 --> Done(["process exits\n(normally, or via the safety-net timeout)"])
 ```
 
-The order matters here in a way that wasn't obvious at first: `-s`'s write has to happen *before* the `-ei` check, not after — checking `-ei` first would call `os.Exit(0)` and terminate the process before the close-write signal ever gets sent when both flags are combined. (This exact ordering bug exists in upstream npiperelay too — not introduced here, but fixed in this fork regardless.) Similarly, `-s` on a message-mode pipe needs the pipe's `CloseWrite()` method specifically: `go-winio` treats a plain zero-length `Write()` as a no-op on message-mode pipes, reserving that for its own internal bookkeeping — a bare `conn.Write(nil)` silently sends nothing on exactly the pipes (Docker Desktop, a Windows MySQL service) `-s` is meant for.
+The order matters here in a way that wasn't obvious at first: `-s`'s write has to happen *before* the `-ei` check, not after — checking `-ei` first would call `os.Exit(0)` and terminate the process before the close-write signal ever gets sent when both flags are combined. (This exact ordering bug exists in upstream npiperelay too — not introduced here, but fixed in this fork regardless.)
+
+`-s` needs the pipe's `CloseWrite()` method specifically, and that's not just an implementation detail — it reflects a real Win32 API limitation. Per `go-winio`'s own doc comment on `PipeConfig.MessageMode`: *"zero-byte writes are only transferred to the reader ... when the pipe is in message mode."* On a byte-mode pipe, a zero-length `Write()` reaches the actual `WriteFile` syscall, but the OS never delivers it to the reader at all — there is no way to signal end-of-data on a byte-mode pipe short of closing the whole connection, in any implementation. This matters concretely: KeyBridge's own SSH-agent pipe (`app/pipe.go`, `winio.PipeConfig{}` — `MessageMode` defaults to `false`) is byte-mode, so `-s` has never actually worked against it, in upstream npiperelay either — this isn't a regression. What KeyBridge does differently is report it: rather than silently doing nothing, it prints a warning to stderr when `-s` is used against a pipe that can't honor it.
 
 The go-winio note in `E1` is the one meaningful behavioral difference from upstream npiperelay (documented in the source comment too): npiperelay's raw Win32 calls can distinguish "the remote signaled a clean end-of-data" from "the pipe actually broke," and exits immediately without waiting on stdin for the latter. go-winio surfaces both as plain `io.EOF`, so KeyBridge can't make that distinction here — it always waits on the stdin side to finish on its own instead (or exits immediately if `-ep` is set, same as before).
 

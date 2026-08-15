@@ -94,12 +94,14 @@ keybridge.exe relay [-p] [-s] [-ep] [-ei] [-v] <named pipe path>
 | Flag | Meaning |
 |------|---------|
 | `-p`  | if the pipe doesn't exist yet, keep retrying instead of exiting right away |
-| `-s`  | once stdin closes, write a zero-length message to mark end-of-data on a message-mode pipe |
+| `-s`  | once stdin closes, signal end-of-data to the pipe — **message-mode pipes only**, see note below |
 | `-ep` | exit as soon as the pipe side closes, without waiting for the stdin side |
 | `-ei` | exit as soon as stdin closes, without waiting for the pipe side |
 | `-v`  | log connection and shutdown events to stderr |
 
 These match `npiperelay`'s flags, so if you already have `socat ... EXEC:"npiperelay.exe ..."` commands lying around (for Docker Desktop's pipe, a Windows MySQL service, a Hyper-V serial console, etc.), they work unchanged with `keybridge.exe relay` swapped in — one relay binary instead of two.
+
+**`-s` only works on message-mode named pipes.** This is a Win32 API limitation, not something either implementation can work around: a zero-length write is only delivered to the reader as an end-of-data signal when the pipe is in message mode — on a byte-mode pipe the write reaches the OS but is never observed on the other end. KeyBridge's own SSH-agent pipe is byte-mode, so `-s` has no effect there (and never did, in upstream npiperelay either — this isn't new). If you pass `-s` against a pipe that doesn't support it, KeyBridge now says so on stderr rather than doing nothing silently. Whether a specific target pipe (Docker Desktop's, a given MySQL build's) is message-mode is up to how its server created it — check its own documentation if `-s` matters for your use case.
 
 ## OpenSSH certificates
 
@@ -131,7 +133,7 @@ On Windows itself, running `build.bat` does all of the above for both architectu
 
 KeyBridge stands entirely on the work of two people who solved the hard parts first, and were generous enough to publish the result.
 
-**John Starks** wrote [npiperelay](https://github.com/jstarks/npiperelay) — a small tool, but a well-made one. Bridging a Win32 named pipe to stdio sounds trivial until you actually sit down and get the overlapped I/O and half-close semantics right; the original source is a clean, careful piece of engineering, and it's the reason a whole ecosystem of WSL-to-Windows tooling exists at all. KeyBridge's relay mode owes its correctness to having that reference to check assumptions against.
+**John Starks** wrote [npiperelay](https://github.com/jstarks/npiperelay) — a small tool, but a well-made one. Bridging a Win32 named pipe to stdio sounds trivial until you sit down and get the overlapped I/O and half-close semantics right, and the original source shows that care in specific ways: a zero-byte read used deliberately to detect a broken pipe without consuming real data, `ERROR_PIPE_NOT_CONNECTED` handled alongside `ERROR_BROKEN_PIPE` rather than assumed away. Those aren't details you get right by accident. KeyBridge's relay mode was built by reading that source closely and checking every design decision against it.
 
 **BUPTCZQ** wrote [WinCryptSSHAgent](https://github.com/buptczq/WinCryptSSHAgent), which is the harder problem by a wide margin — a correct, multi-protocol SSH agent built directly on Windows CryptoAPI/CNG, handling smart cards, certificate enumeration, and signing without ever touching a private key. That's the kind of systems code that's easy to get subtly wrong and hard to verify without real hardware in hand; getting it right and open-sourcing it is a genuine gift to anyone who's had to deal with a PIV card and a corporate Windows machine. This entire project is a fork of theirs, unmodified except for the relay addition documented above.
 

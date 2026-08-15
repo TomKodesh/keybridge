@@ -1,6 +1,6 @@
 # KeyBridge
 
-Bridge your Windows-managed SSH keys — including PIV/smart-card-backed certificates — into WSL, without ever letting the private key material leave Windows.
+Extend your Windows-managed SSH credentials — including PIV/smart-card-backed certificates — into WSL, with the exact same security guarantees your organization already relies on: the private key never leaves the card or the certificate store, and every signature is still produced by Windows CryptoAPI/CNG, PIN prompt and all.
 
 KeyBridge is one Windows executable that does two jobs:
 
@@ -13,7 +13,9 @@ It's a fork of [buptczq/WinCryptSSHAgent](https://github.com/buptczq/WinCryptSSH
 
 ## Why this exists
 
-On a locked-down corporate Windows machine, your SSH key usually isn't a file — it's a PIV smart card, unlocked by a PIN, sitting behind Windows' own certificate machinery. That's great for security and useless for WSL, which has no way to reach a Windows smart card reader on its own. The usual fix is two separate tools: an agent that can talk to the smart card (WinCryptSSHAgent) plus a relay that pipes a Windows named pipe into a WSL Unix socket (npiperelay), wired together with `socat`. KeyBridge is those two tools collapsed into one binary, so there's one thing to install, one thing to keep running, and one set of docs to read.
+Many organizations issue SSH credentials as PIV smart cards for a specific reason: the private key is generated on the card and never exists as an exportable file. Windows CryptoAPI/CNG is the only thing that ever talks to it, and every use requires a fresh PIN unlock. That's a deliberate, well-built security model, and it works seamlessly for any Windows-native SSH client — it just wasn't designed with a second execution environment in mind. WSL runs as ordinary Linux alongside Windows on the same machine, and has no native path of its own to a Windows smart card reader.
+
+KeyBridge doesn't change that security model or work around it — it extends the same Windows-mediated signing path into WSL. The request still terminates at Windows CryptoAPI/CNG; the PIN prompt is still Windows'; the key still never leaves the card or the certificate store. The only difference from a native Windows SSH client is which shell the request originated from. Doing this previously meant running two separate tools — an agent that can talk to the smart card (WinCryptSSHAgent) and a relay that pipes a Windows named pipe into a WSL Unix socket (npiperelay), wired together with `socat`. KeyBridge is those two collapsed into one binary: one thing to install, one thing to keep running, one set of docs to read.
 
 ## Features
 

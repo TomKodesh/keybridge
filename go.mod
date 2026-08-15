@@ -1,4 +1,4 @@
-module github.com/buptczq/WinCryptSSHAgent
+module github.com/TomKodesh/keybridge
 
 go 1.14
 

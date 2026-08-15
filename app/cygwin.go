@@ -6,7 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"fmt"
-	"github.com/buptczq/WinCryptSSHAgent/utils"
+	"github.com/TomKodesh/keybridge/utils"
 	"io"
 	"net"
 	"os"

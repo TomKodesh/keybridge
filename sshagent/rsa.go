@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"golang.org/x/crypto/ssh"
 	"io"
-	"github.com/buptczq/WinCryptSSHAgent/capi"
+	"github.com/TomKodesh/keybridge/capi"
 )
 
 type rsaSigner struct {

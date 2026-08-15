@@ -2,7 +2,7 @@ package main
 
 import (
 	notification "github.com/hattya/go.notify/windows"
-	"github.com/buptczq/WinCryptSSHAgent/app"
+	"github.com/TomKodesh/keybridge/app"
 )
 
 type Menu struct {

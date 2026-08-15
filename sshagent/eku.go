@@ -3,7 +3,7 @@ package sshagent
 import (
 	"crypto/x509"
 	"encoding/asn1"
-	"github.com/buptczq/WinCryptSSHAgent/capi"
+	"github.com/TomKodesh/keybridge/capi"
 )
 
 var (

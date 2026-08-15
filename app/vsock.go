@@ -9,7 +9,7 @@ import (
 
 	"github.com/Microsoft/go-winio"
 	"github.com/Microsoft/go-winio/pkg/guid"
-	"github.com/buptczq/WinCryptSSHAgent/utils"
+	"github.com/TomKodesh/keybridge/utils"
 )
 
 var (

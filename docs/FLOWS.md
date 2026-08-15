@@ -121,12 +121,15 @@ flowchart TD
         D --> D1["io.Copy(pipe, stdin)"]
         D1 --> D2{"error?"}
         D2 -- yes --> Z2(["log.Fatalln, exit 1"])
-        D2 -- "no, clean EOF" --> D3{"-ei set?"}
-        D3 -- yes --> Z3(["os.Exit(0) immediately"])
-        D3 -- no --> D4{"-s set?"}
-        D4 -- yes --> D5["write a zero-length message\n(end-of-data marker on\na message-mode pipe)"]
-        D4 -- no --> D6
-        D5 --> D6["close(stdinDone) channel"]
+        D2 -- "no, clean EOF" --> D3{"-s set?"}
+        D3 -- yes --> D3a{"pipe supports\nCloseWrite()?"}
+        D3a -- "yes (message-mode pipe)" --> D3b["conn.CloseWrite()"]
+        D3a -- "no (byte-mode pipe)" --> D3c["conn.Write(nil)\n(reaches the real syscall here)"]
+        D3b --> D4
+        D3c --> D4
+        D3 -- no --> D4{"-ei set?"}
+        D4 -- yes --> Z3(["os.Exit(0) immediately"])
+        D4 -- no --> D6["close(stdinDone) channel"]
     end
 
     subgraph G2["main goroutine: pipe -> stdout"]
@@ -135,12 +138,14 @@ flowchart TD
         E1 -- "no, EOF\n(go-winio maps a broken pipe to\nio.EOF too -- can't tell them apart)" --> E2{"-ep set?"}
         E2 -- yes --> Z5(["os.Exit(0) immediately,\ndon't wait for the stdin side"])
         E2 -- no --> E3["close stdout"]
-        E3 --> E4["block on <-stdinDone"]
+        E3 --> E4["wait on <-stdinDone,\nbounded by stdinDrainTimeout (5s)\nas a safety net against a dead\npipe with idle stdin"]
     end
 
     D6 -.unblocks.-> E4
-    E4 --> Done(["process exits normally"])
+    E4 --> Done(["process exits\n(normally, or via the safety-net timeout)"])
 ```
+
+The order matters here in a way that wasn't obvious at first: `-s`'s write has to happen *before* the `-ei` check, not after — checking `-ei` first would call `os.Exit(0)` and terminate the process before the close-write signal ever gets sent when both flags are combined. (This exact ordering bug exists in upstream npiperelay too — not introduced here, but fixed in this fork regardless.) Similarly, `-s` on a message-mode pipe needs the pipe's `CloseWrite()` method specifically: `go-winio` treats a plain zero-length `Write()` as a no-op on message-mode pipes, reserving that for its own internal bookkeeping — a bare `conn.Write(nil)` silently sends nothing on exactly the pipes (Docker Desktop, a Windows MySQL service) `-s` is meant for.
 
 The go-winio note in `E1` is the one meaningful behavioral difference from upstream npiperelay (documented in the source comment too): npiperelay's raw Win32 calls can distinguish "the remote signaled a clean end-of-data" from "the pipe actually broke," and exits immediately without waiting on stdin for the latter. go-winio surfaces both as plain `io.EOF`, so KeyBridge can't make that distinction here — it always waits on the stdin side to finish on its own instead (or exits immediately if `-ep` is set, same as before).
 

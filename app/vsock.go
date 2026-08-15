@@ -17,7 +17,7 @@ var (
 )
 
 // https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/user-guide/make-integration-service
-//$friendlyName = "WinCryptSSHAgent"
+//$friendlyName = "KeyBridge"
 //$service = New-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Virtualization\GuestCommunicationServices" -Name "22223333-facb-11e6-bd58-64006a7986d3"
 //$service.SetValue("ElementName", $friendlyName)
 

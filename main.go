@@ -64,7 +64,7 @@ func installService() {
 		if err != nil {
 			return err
 		}
-		err = agentSrv.SetStringValue("ElementName", "WinCryptSSHAgent")
+		err = agentSrv.SetStringValue("ElementName", "KeyBridge")
 		if err != nil {
 			return err
 		}

@@ -1,20 +1,20 @@
 # Yubikey on WSL
 
-This tutorial will guide you to confgure YubiKey so it can be used with SSH under WSL. We will use YubiKey as a PIV Compatible Smart Card. Note that YubiKey also has other modes that can be used for secure SHH access like GPG that are not covered in this tutorial.
+This tutorial will guide you to configure a YubiKey so it can be used with SSH under WSL. We will use the YubiKey as a PIV-compatible smart card. Note that YubiKey also has other modes that can be used for secure SSH access, like GPG, that are not covered in this tutorial.
 
 ## Prerequisites
 
-* Fresh YubiKey 5 
+* Fresh YubiKey 5
 * Yubico software from https://www.yubico.com/products/services-software/download/smart-card-drivers-tools/
   * YubiKey Manager (graphic interface) - it also installs `ykman.exe`
   * YubiKey Smart Card Minidriver (Windows) - it is required to get ECDSA instead of default RSA
-* WinCrypt SSH Agent from https://github.com/buptczq/WinCryptSSHAgent
+* KeyBridge (this repository) — build from source, or grab `keybridge.exe` from the [releases page](https://github.com/TomKodesh/keybridge/releases)
 * Console (ie. `cmd.exe` or Windows Terminal)
 
 ## Steps
 
 ### Insert YubiKey into USB port of your computer
-   
+
 You can check with Device Manager (`devmgmt.msc`) that the system recognized your key. It will be listed under *Smart Cards* as *YubiKey Smart Card Minidriver*.
 
 ### Change default PIN and PUK
@@ -38,7 +38,7 @@ Execute following commands, provide new PIN and PUK when prompted:
 
     Command generates a certificate from your public key. In brief: Windows needs it when speaking to your YubiKey.
 
-### Check Windows Certificate Store 
+### Check Windows Certificate Store
 
  1. Unplug your YubiKey.
  1. Plug your YubiKey back.
@@ -48,18 +48,18 @@ Execute following commands, provide new PIN and PUK when prompted:
 
 ***NOTE#2:*** You should also install the [YubiKey Smart Card Minidriver](https://www.yubico.com/support/download/smart-card-drivers-tools/) if you want to work with ECC algorithm certificates.
 
-### Confiure YubiKey for SSH in WSL and target machine
+### Configure YubiKey for SSH in WSL and target machine
 
-1. Ensure that `WinCryptSSHAgent.exe` is running.
+1. Ensure that `keybridge.exe` is running.
 1. Run your WSL console and execute the command `which socat` to check if `socat` is present.
-   
-   *Some WSL Linux distros don't include `socat` by default, such as Ubuntu 20.04*
-   
-   a) If `socat` is not installed, install it before continuing. (Debian/Ubuntu example: `sudo apt install -y socat`)
-1. Right click on *WinCrypt SSH Agent*'s icon in tray and select *Show WSL settings* (or *Show WSL2 / Linux On Hyper-V Settings* if using WSL2 and/or Hyper-V) then press OK.
 
-    Line like `export SSH_AUTH_SOCK=/mnt/c/Users/Jane/wincrypt-wsl.sock` will be copeid into your clipboard for WSL.
-    
+   *Some WSL Linux distros don't include `socat` by default, such as Ubuntu 20.04*
+
+   a) If `socat` is not installed, install it before continuing. (Debian/Ubuntu example: `sudo apt install -y socat`)
+1. Right-click KeyBridge's icon in the tray and select **Show WSL Settings** (or **Show WSL2 / Linux On Hyper-V Settings** if using WSL2 and/or Hyper-V) then press OK.
+
+    A line like `export SSH_AUTH_SOCK=/mnt/c/Users/Jane/wincrypt-wsl.sock` will be copied into your clipboard for WSL. (The socket filename is `wincrypt-wsl.sock` regardless of the product rename — that's an internal artifact name the binary still writes, not a typo.)
+
     For WSL2 / Hyper-V, lines like this will be copied into your clipboard:
     ```
     export SSH_AUTH_SOCK=/tmp/wincrypt-hv.sock
@@ -69,14 +69,16 @@ Execute following commands, provide new PIN and PUK when prompted:
       (setsid nohup socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork SOCKET-CONNECT:40:0:x0000x33332222x02000000x00000000 >/dev/null 2>&1)
     fi
     ```
-1. Run your WSL console and execute command from previous step.
+
+    This is KeyBridge's built-in WSL2 mechanism (§5 of [`docs/FLOWS.md`](../docs/FLOWS.md)) — it needs the one-time elevated `-i` install step and a reboot. If you'd rather avoid that, KeyBridge's own [named-pipe relay](../README.md#using-the-named-pipe-relay) is a simpler alternative that needs no elevation at all.
+1. Run your WSL console and execute the command from the previous step.
 1. `ssh` into your target machine, authenticate with credentials used until now.
-1. Right click on *WinCrypt SSH Agent*'s icon in tray and select *Show public keys settings* then press OK.
+1. Right-click KeyBridge's icon in the tray and select **Show Public Keys** then press OK.
 
     All known keys in SSH format will be copied. You need to locate one named **SSH key**.
 
-1. Copy line with *SSH key* into `~\.ssh\authorized_keys` on target machine.
-1. Disconnect from target machine.
+1. Copy the line with *SSH key* into `~\.ssh\authorized_keys` on the target machine.
+1. Disconnect from the target machine.
 
 ### Use YubiKey for SSH
 
@@ -84,7 +86,3 @@ Execute following commands, provide new PIN and PUK when prompted:
 1. Provide PIN when Windows asks.
 1. Touch YubiKey twice (it should be blinking).
 1. You should be allowed into your target machine. Enjoy! :rocket:
-
-
-
-

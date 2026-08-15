@@ -21,7 +21,7 @@ KeyBridge is that path. It gives WSL access to the same agent and the same signi
 
 * SSH identities sourced directly from the Windows Certificate Store — no separate key files, no separate driver install for PIV smart cards
 * OpenSSH certificate support via a filename-based override mechanism (see below)
-* Speaks five different Windows SSH-agent transports (Cygwin socket, Windows AF_UNIX socket, named pipe, Pageant protocol, XShell Xagent), so it works with most Windows SSH clients, not just WSL
+* Speaks six different Windows SSH-agent transports (Cygwin socket, Windows AF_UNIX socket, named pipe, WSL2's Hyper-V socket mechanism, Pageant protocol, XShell Xagent), so it works with most Windows SSH clients, not just WSL — see [`docs/FLOWS.md`](docs/FLOWS.md) §2 for how they all funnel into the same agent core
 * Built-in named-pipe relay (`keybridge.exe relay ...`) — reach its own agent pipe, or any other Windows named pipe, from WSL
 
 ## Quick start: SSH agent
@@ -103,7 +103,7 @@ These match `npiperelay`'s flags, so if you already have `socat ... EXEC:"npiper
 
 ## OpenSSH certificates
 
-OpenSSH certificates aren't the same format as the X.509 certificates in the Windows Certificate Store, so KeyBridge can't convert one into the other automatically. Instead, drop your OpenSSH certificate into your Windows user profile folder, named `<Certificate Common Name>-cert.pub` or `<Certificate Serial Number>-cert.pub`, and KeyBridge will pair it with the matching store certificate automatically.
+OpenSSH certificates aren't the same format as the X.509 certificates in the Windows Certificate Store, so KeyBridge can't convert one into the other automatically. Instead, drop your OpenSSH certificate into your Windows user profile folder, named `<Certificate Serial Number>-cert.pub` (checked first) or `<Certificate Common Name>-cert.pub` (fallback), and KeyBridge will pair it with the matching store certificate automatically.
 
 ## Debug logging
 
@@ -115,12 +115,17 @@ then reboot (environment variable changes need a fresh process tree to take effe
 
 ## Building from source
 
+The full build — matching CI and the official releases — generates the version/icon resource first, then builds with the same flags `build.bat` uses:
+
 ```bash
-go build .                                   # on Windows
-GOOS=windows GOARCH=amd64 go build .         # cross-compiled from Linux/WSL/macOS
+go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
+go generate ./...
+GOOS=windows GOARCH=amd64 go build -ldflags "-w -s -H=windowsgui" -trimpath -o keybridge.exe .
 ```
 
-No `CGO_ENABLED` requirements, no external toolchain beyond Go itself.
+`-H=windowsgui` matters, not just style: without it, the binary links as a console-subsystem app and pops up a visible console window every time it runs — wrong for a tray app. `go generate` embeds the tray icon and the version info shown in Windows' file-properties dialog; skipping it still produces a binary that runs, just without those.
+
+On Windows itself, running `build.bat` does all of the above for both architectures in one step. No `CGO_ENABLED` requirements either way, no external toolchain beyond Go itself.
 
 ## Acknowledgments
 

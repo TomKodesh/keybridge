@@ -5,6 +5,10 @@ import (
 	"io"
 )
 
+// WSL_SOCK and CYGWIN_SOCK are on-disk socket filenames, not display
+// strings -- intentionally left as-is rather than renamed to "keybridge-*"
+// as part of the fork, so any external scripts/tooling written against the
+// original file paths keep working unchanged.
 const (
 	WSL_SOCK    = "wincrypt-wsl.sock"
 	CYGWIN_SOCK = "wincrypt-cygwin.sock"

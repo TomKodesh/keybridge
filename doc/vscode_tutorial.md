@@ -1,15 +1,15 @@
 # Using VS Code Git SSH
-This will help get Git configured to work with the WinCryptSSHAgent provider to enable SSH-based authentication within Visual Studio Code.
+This will help get Git configured to work with KeyBridge to enable SSH-based authentication within Visual Studio Code.
 
 ## Prerequisites
 * Configured YubiKey, SSH keys, etc.
-    * Follow the tutorial in [WSL](wsl_tutorial.md) to get setup
+    * Follow the tutorial in [WSL](wsl_tutorial.md) to get set up
 * GitHub Account
 
 ## Steps
 1. Insert YubiKey into computer
 2. Open Git `bash` by navigating to Start > Git > Git Bash OR typing Git Bash and letting the OS find it for you
-3. Right-click on WinCryptSSHAgent and select `Show Cygwin Settings` and press OK
+3. Right-click KeyBridge's icon in the tray and select **Show Cygwin Settings**, then press OK
 4. Paste the results of the previous command into the Git `bash` window, press Enter.
 5. Type `ssh-add -L` and locate the key associated with your YubiKey (If following the [WSL](wsl_tutorial.md) directions, it will begin with `ecdsa-sha2-nistp384` and end with `SSH Key`)
 6. Highlight the key and copy it to your clipboard.

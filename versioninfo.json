@@ -19,16 +19,16 @@
         "FileSubType": "00"
     },
     "StringFileInfo": {
-        "Comments": "A SSH Agent based-on Windows CryptoAPI",
+        "Comments": "SSH Agent based on Windows CryptoAPI, plus a named-pipe relay. Fork of WinCryptSSHAgent.",
         "CompanyName": "",
-        "FileDescription": "WinCrypt SSH Agent",
+        "FileDescription": "KeyBridge",
         "FileVersion": "",
         "InternalName": "",
-        "LegalCopyright": "Copyright © 2019-2021 BUPTCZQ.",
+        "LegalCopyright": "Copyright © 2019-2021 BUPTCZQ. Portions Copyright © 2026 Tom Kodesh.",
         "LegalTrademarks": "",
-        "OriginalFilename": "WinCryptSSHAgent.exe",
+        "OriginalFilename": "keybridge.exe",
         "PrivateBuild": "",
-        "ProductName": "WinCrypt SSH Agent",
+        "ProductName": "KeyBridge",
         "ProductVersion": "v1.1.9",
         "SpecialBuild": ""
     },

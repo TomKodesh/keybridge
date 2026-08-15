@@ -4,11 +4,11 @@ setlocal
 @rem Build all by default
 if [%1]==[] (
 	go generate
-	call :build 386 WinCryptSSHAgent_32bit.exe
-	call :build amd64 WinCryptSSHAgent.exe
+	call :build 386 KeyBridge_32bit.exe
+	call :build amd64 KeyBridge.exe
 ) else (
 	go generate
-	call :build %1 WinCryptSSHAgent-%1.exe
+	call :build %1 KeyBridge-%1.exe
 )
 goto :eof
 

@@ -1,6 +1,8 @@
-# WinCrypt SSH Agent
+# KeyBridge
 
-![CI](https://github.com/buptczq/WinCryptSSHAgent/workflows/Go/badge.svg)
+A fork of [WinCryptSSHAgent](https://github.com/buptczq/WinCryptSSHAgent) with one addition: a built-in `relay` subcommand, so the same binary can also bridge a Windows named pipe to stdin/stdout (the same job [jstarks/npiperelay](https://github.com/jstarks/npiperelay) does) — useful for reaching this binary's own SSH-agent pipe, or any other named pipe (Docker Desktop, a Windows MySQL service, etc.), from WSL via `socat`.
+
+Everything else — SSH-agent behavior backed by Windows CryptoAPI/CNG (including PIV/smart-card certs), the tray app, Pageant/Cygwin/named-pipe/XShell protocol support — is unmodified upstream WinCryptSSHAgent behavior. See [Credits & License](#credits--license) below.
 
 ## Introduction
 
@@ -18,6 +20,7 @@ Benefit by Windows Certificate Management, this project natively supports the us
 * Work with smart cards natively without installing any driver in Windows (PIV only)
 * Support for OpenSSH certificates (so you can use your smart card with an additional OpenSSH certificate)
 * Good compatibility
+* **New in KeyBridge:** built-in named-pipe relay (`keybridge relay ...`) for bridging any Windows named pipe into WSL — no separate `npiperelay.exe` needed
 
 ## Compatibility
 
@@ -44,23 +47,15 @@ With the support of these protocols, this project is compatible with most SSH cl
 
 ## Installing
 
-### Install with Chocolatey
+Build from source (`go build .` on Windows, or cross-compile with `GOOS=windows GOARCH=amd64 go build .`), or grab a build from the releases page once available.
 
-```
-choco install wincrypt-sshagent
-```
-
-### Manually Install
-
-Stable versions can be obtained from the release page. 
-
-Additionally, you may make an shortcut of this application to the startup folder.
+You may make a shortcut of this application to the startup folder so it launches automatically.
 
 ## Usage
 
-### Basic Usage
+### Basic Usage (SSH agent)
 
-1. Start WinCryptSSHAgent
+1. Start `keybridge.exe`
 2. Right-click the icon on your taskbar
 3. You can get necessary information by selecting your interesting item in the menu
 
@@ -68,9 +63,32 @@ Note: Some SSH clients using Pageant Protocol, e.g., Putty, XShell and Jetbrains
 
 Check [Yubikey with WSL tutorial](doc/wsl_tutorial.md) to start using Yubikey with SSH on WSL.
 
+### Relay mode (new)
+
+```
+keybridge.exe relay [-p] [-s] [-ep] [-ei] [-v] <named pipe path>
+```
+
+| Flag | Meaning |
+|------|---------|
+| `-p`  | poll until the named pipe exists |
+| `-s`  | send a 0-byte message to the pipe after EOF on stdin |
+| `-ep` | terminate on EOF reading from the pipe, even if there's more to write |
+| `-ei` | terminate on EOF reading from stdin, even if there's more to write |
+| `-v`  | verbose output on stderr |
+
+Same flags as `npiperelay`, so any `socat ... EXEC:"npiperelay.exe ..."` command works unchanged with `EXEC:"keybridge.exe relay ..."`. To reach this binary's own SSH-agent pipe from WSL:
+
+```bash
+export SSH_AUTH_SOCK=$HOME/.ssh/agent.sock
+socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork EXEC:"keybridge.exe relay //./pipe/openssh-ssh-agent" &
+```
+
+(adjust the pipe path to whatever this binary is actually listening on — check the tray menu's Named Pipe entry for the exact path.)
+
 ### Work with Xshell
 
-1. Install and run WinCryptSSHAgent
+1. Install and run `keybridge.exe`
 2. Open the Properties dialog box of your session.
 3. From Category, select 'SSH', Select 'Use Xagent (SSH agent)' for passphrase handling.
 4. From Category, select 'Authentication' and select 'Public Key' as the authentication method.
@@ -92,13 +110,8 @@ If you want to work with OpenSSH certificates, you should put your OpenSSH Certi
 3. Reproduce your problem
 4. The debug log is located in `%USERPROFILE%\WCSA_DEBUG.log`
 
-### Contribute
+## Credits & License
 
-**Please use issues for everything**
+KeyBridge is a fork of [buptczq/WinCryptSSHAgent](https://github.com/buptczq/WinCryptSSHAgent), licensed under the [Apache License 2.0](LICENSE) (Copyright 2019 BUPTCZQ). All SSH-agent, CryptoAPI/CNG, and tray-app code is theirs, unmodified except where noted (see `main.go`).
 
-- For a small change, just send a PR.
-- For bigger changes open an issue for discussion before sending a PR.
-- You can also contribute by:
-  - Reporting issues
-  - Suggesting new features or enhancements
-  - Improve/fix documentation
+The `relay` subcommand replicates the behavior (and CLI flags) of [jstarks/npiperelay](https://github.com/jstarks/npiperelay) (MIT License, © 2017 John Starks) as a design reference, but is an independent implementation written against `go-winio` rather than a copy of its code.

@@ -1,11 +1,17 @@
 package main
 
+// This file has been modified from the upstream WinCryptSSHAgent project
+// (https://github.com/buptczq/WinCryptSSHAgent, Apache License 2.0) as part
+// of KeyBridge: a `relay` subcommand was added (see relay.go) so this binary
+// can also act as a named-pipe-to-stdio relay, in addition to its original
+// SSH-agent behavior, which is otherwise unchanged.
+
 //go:generate goversioninfo -icon=assets/icon.ico
 
 import (
 	"context"
 	"flag"
-	"github.com/buptczq/WinCryptSSHAgent/capi"
+	"github.com/TomKodesh/keybridge/capi"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -13,9 +19,9 @@ import (
 	"time"
 
 	"github.com/Microsoft/go-winio"
-	"github.com/buptczq/WinCryptSSHAgent/app"
-	"github.com/buptczq/WinCryptSSHAgent/sshagent"
-	"github.com/buptczq/WinCryptSSHAgent/utils"
+	"github.com/TomKodesh/keybridge/app"
+	"github.com/TomKodesh/keybridge/sshagent"
+	"github.com/TomKodesh/keybridge/utils"
 	notify "github.com/hattya/go.notify"
 	notification "github.com/hattya/go.notify/windows"
 	"golang.org/x/crypto/ssh/agent"
@@ -23,7 +29,7 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-const agentTitle = "WinCrypt SSH Agent v1.1.9"
+const agentTitle = "KeyBridge v1.1.9 (WinCryptSSHAgent fork)"
 
 var applications = []app.Application{
 	new(app.PubKeyView),
@@ -97,6 +103,14 @@ func initDebugLog() {
 }
 
 func main() {
+	// KeyBridge addition: dispatch to relay mode before touching the global
+	// flag set (relay.go parses its own flags), so `keybridge relay ...`
+	// never reaches the agent/tray startup path below.
+	if len(os.Args) > 1 && os.Args[1] == "relay" {
+		runRelay(os.Args[2:])
+		return
+	}
+
 	flag.Parse()
 	utils.SetProcessSystemDpiAware()
 	initDebugLog()

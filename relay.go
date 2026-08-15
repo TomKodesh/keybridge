@@ -31,11 +31,11 @@ const pollInterval = 200 * time.Millisecond
 
 func runRelay(args []string) {
 	fs := flag.NewFlagSet("relay", flag.ExitOnError)
-	poll := fs.Bool("p", false, "poll until the named pipe exists")
-	closeWrite := fs.Bool("s", false, "send a 0-byte message to the pipe after EOF on stdin")
-	closeOnPipeEOF := fs.Bool("ep", false, "terminate on EOF reading from the pipe, even if there is more data to write")
-	closeOnStdinEOF := fs.Bool("ei", false, "terminate on EOF reading from stdin, even if there is more data to write")
-	verbose := fs.Bool("v", false, "verbose output on stderr")
+	poll := fs.Bool("p", false, "keep retrying instead of failing immediately if the pipe doesn't exist yet")
+	closeWrite := fs.Bool("s", false, "once stdin closes, write a zero-length message to the pipe to mark end-of-data")
+	closeOnPipeEOF := fs.Bool("ep", false, "exit as soon as the pipe side closes, without waiting on the stdin side")
+	closeOnStdinEOF := fs.Bool("ei", false, "exit as soon as stdin closes, without waiting on the pipe side")
+	verbose := fs.Bool("v", false, "log connection and shutdown events to stderr")
 	fs.Usage = func() {
 		fmt.Fprintln(os.Stderr, "usage: keybridge relay [-p] [-s] [-ep] [-ei] [-v] <named pipe path>")
 		fs.PrintDefaults()
@@ -74,8 +74,10 @@ func runRelay(args []string) {
 		}
 
 		if *closeWrite {
-			// A zero-byte write on a message pipe indicates that no more
-			// data is coming.
+			// On a message-mode pipe, a zero-length write is itself a
+			// message: the reader on the other end sees it as an explicit
+			// marker that no further data will follow, distinct from the
+			// pipe simply not having anything new to deliver yet.
 			_, _ = conn.Write(nil)
 		}
 		close(stdinDone)

@@ -93,11 +93,11 @@ keybridge.exe relay [-p] [-s] [-ep] [-ei] [-v] <named pipe path>
 
 | Flag | Meaning |
 |------|---------|
-| `-p`  | poll until the named pipe exists, instead of failing immediately |
-| `-s`  | send a 0-byte message to the pipe after EOF on stdin (signals "no more data" on a message-mode pipe) |
-| `-ep` | terminate on EOF reading from the pipe, even if there's still more to write |
-| `-ei` | terminate on EOF reading from stdin, even if there's still more to write |
-| `-v`  | verbose logging to stderr |
+| `-p`  | if the pipe doesn't exist yet, keep retrying instead of exiting right away |
+| `-s`  | once stdin closes, write a zero-length message to mark end-of-data on a message-mode pipe |
+| `-ep` | exit as soon as the pipe side closes, without waiting for the stdin side |
+| `-ei` | exit as soon as stdin closes, without waiting for the pipe side |
+| `-v`  | log connection and shutdown events to stderr |
 
 These match `npiperelay`'s flags, so if you already have `socat ... EXEC:"npiperelay.exe ..."` commands lying around (for Docker Desktop's pipe, a Windows MySQL service, a Hyper-V serial console, etc.), they work unchanged with `keybridge.exe relay` swapped in — one relay binary instead of two.
 

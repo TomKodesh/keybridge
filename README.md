@@ -120,6 +120,16 @@ GOOS=windows GOARCH=amd64 go build .         # cross-compiled from Linux/WSL/mac
 
 No `CGO_ENABLED` requirements, no external toolchain beyond Go itself.
 
+## Acknowledgments
+
+KeyBridge stands entirely on the work of two people who solved the hard parts first, and were generous enough to publish the result.
+
+**John Starks** wrote [npiperelay](https://github.com/jstarks/npiperelay) — a small tool, but a well-made one. Bridging a Win32 named pipe to stdio sounds trivial until you actually sit down and get the overlapped I/O and half-close semantics right; the original source is a clean, careful piece of engineering, and it's the reason a whole ecosystem of WSL-to-Windows tooling exists at all. KeyBridge's relay mode owes its correctness to having that reference to check assumptions against.
+
+**BUPTCZQ** wrote [WinCryptSSHAgent](https://github.com/buptczq/WinCryptSSHAgent), which is the harder problem by a wide margin — a correct, multi-protocol SSH agent built directly on Windows CryptoAPI/CNG, handling smart cards, certificate enumeration, and signing without ever touching a private key. That's the kind of systems code that's easy to get subtly wrong and hard to verify without real hardware in hand; getting it right and open-sourcing it is a genuine gift to anyone who's had to deal with a PIV card and a corporate Windows machine. This entire project is a fork of theirs, unmodified except for the relay addition documented above.
+
+Thank you both for doing quality work in public.
+
 ## Credits & License
 
 KeyBridge is a fork of [buptczq/WinCryptSSHAgent](https://github.com/buptczq/WinCryptSSHAgent), licensed under the [Apache License 2.0](LICENSE) (Copyright 2019 BUPTCZQ). All SSH-agent, CryptoAPI/CNG signing, and tray-app code is theirs; `main.go` carries a notice marking the one addition made to it, per the license's requirements.

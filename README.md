@@ -1,69 +1,89 @@
 # KeyBridge
 
-A fork of [WinCryptSSHAgent](https://github.com/buptczq/WinCryptSSHAgent) with one addition: a built-in `relay` subcommand, so the same binary can also bridge a Windows named pipe to stdin/stdout (the same job [jstarks/npiperelay](https://github.com/jstarks/npiperelay) does) — useful for reaching this binary's own SSH-agent pipe, or any other named pipe (Docker Desktop, a Windows MySQL service, etc.), from WSL via `socat`.
+Bridge your Windows-managed SSH keys — including PIV/smart-card-backed certificates — into WSL, without ever letting the private key material leave Windows.
 
-Everything else — SSH-agent behavior backed by Windows CryptoAPI/CNG (including PIV/smart-card certs), the tray app, Pageant/Cygwin/named-pipe/XShell protocol support — is unmodified upstream WinCryptSSHAgent behavior. See [Credits & License](#credits--license) below.
+KeyBridge is one Windows executable that does two jobs:
 
-## Introduction
+1. **SSH agent**, backed by the Windows Certificate Store via CryptoAPI/CNG. Any certificate with a usable private key — a plain user cert, a PIV smart card, a Windows Hello-backed key — becomes an SSH identity automatically. Signing happens on the Windows side; the PIN/touch prompt you already know is entirely Windows'.
+2. **Named-pipe relay**, so that same agent (or any other Windows named pipe) can be reached from a WSL shell. This is the same job [npiperelay](https://github.com/jstarks/npiperelay) does, built into the same binary.
 
-A SSH Agent based-on Windows CryptoAPI.
+It's a fork of [buptczq/WinCryptSSHAgent](https://github.com/buptczq/WinCryptSSHAgent) — job 1 above is entirely their work, unmodified. Job 2 is new here.
 
-This project allows other programs to access SSH keys stored in your Windows Certificate Store for authentication.
+![Architecture: WSL tools -> socat -> keybridge.exe relay -> named pipe -> keybridge.exe agent -> Windows CryptoAPI/CNG -> cert store / PIV smart card, and separately keybridge.exe agent -> SSH server](overview.svg)
 
-Benefit by Windows Certificate Management, this project natively supports the use of windows user certificates or smart cards, e.g., Yubikey PIV, for authentication.
+## Why this exists
 
-## Overview
-![Overview](overview.svg)
+On a locked-down corporate Windows machine, your SSH key usually isn't a file — it's a PIV smart card, unlocked by a PIN, sitting behind Windows' own certificate machinery. That's great for security and useless for WSL, which has no way to reach a Windows smart card reader on its own. The usual fix is two separate tools: an agent that can talk to the smart card (WinCryptSSHAgent) plus a relay that pipes a Windows named pipe into a WSL Unix socket (npiperelay), wired together with `socat`. KeyBridge is those two tools collapsed into one binary, so there's one thing to install, one thing to keep running, and one set of docs to read.
 
-## Feature
+## Features
 
-* Work with smart cards natively without installing any driver in Windows (PIV only)
-* Support for OpenSSH certificates (so you can use your smart card with an additional OpenSSH certificate)
-* Good compatibility
-* **New in KeyBridge:** built-in named-pipe relay (`keybridge relay ...`) for bridging any Windows named pipe into WSL — no separate `npiperelay.exe` needed
+* SSH identities sourced directly from the Windows Certificate Store — no separate key files, no separate driver install for PIV smart cards
+* OpenSSH certificate support via a filename-based override mechanism (see below)
+* Speaks five different Windows SSH-agent transports (Cygwin socket, Windows AF_UNIX socket, named pipe, Pageant protocol, XShell Xagent), so it works with most Windows SSH clients, not just WSL
+* Built-in named-pipe relay (`keybridge.exe relay ...`) — reach its own agent pipe, or any other Windows named pipe, from WSL
 
-## Compatibility
+## Quick start: SSH agent
 
-There are many different OpenSSH agent implementations in Windows. This project implements five popular protocols in Windows:
+1. Run `keybridge.exe`. It sits in the system tray — no window.
+2. Right-click the tray icon to see connection info for whichever transport your SSH client needs (Pageant, named pipe, etc.). Most Windows SSH clients (PuTTY, XShell, JetBrains, Git for Windows) will just find it automatically via Pageant protocol; nothing to configure.
+3. For WSL specifically, see the relay section below.
 
-* Cygwin UNIX Socket
-* Windows UNIX Socket (Windows 10 1803 or later)
-* Named pipe
-* Pageant SSH Agent Protocol
-* XShell Xagent Protocol
+Setting up a PIV smart card (e.g. a YubiKey) for the first time is a separate, more involved process — see [`doc/wsl_tutorial.md`](doc/wsl_tutorial.md).
 
-With the support of these protocols, this project is compatible with most SSH clients in Windows. For example:
+## Using the named-pipe relay
 
-* Git for Windows
-* Windows Subsystem for Linux
-* Windows OpenSSH
-* Putty
-* Jetbrains
-* SecureCRT
-* XShell
-* Cygwin
-* MINGW
-* ...
+This is the part that gets KeyBridge into WSL. The idea: `keybridge.exe` (running on Windows) listens on a named pipe; `keybridge.exe relay` (also on Windows, but invoked *from* WSL) connects to that pipe and shuttles bytes over stdin/stdout; `socat`, running in WSL, turns that into a normal Unix socket that `ssh` and everything else already know how to use.
 
-## Installing
+```
+$WSL app (ssh, oc, aws, ...)
+        |  reads/writes SSH_AUTH_SOCK
+        v
+socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork
+        |  spawns, per connection
+        v
+keybridge.exe relay //./pipe/openssh-ssh-agent   <- runs as a Windows process, via WSL interop
+        |  named pipe
+        v
+keybridge.exe (the agent)  --CryptoAPI/CNG-->  Cert Store / PIV smart card
+```
 
-Build from source (`go build .` on Windows, or cross-compile with `GOOS=windows GOARCH=amd64 go build .`), or grab a build from the releases page once available.
+### 1. Get `keybridge.exe` reachable from WSL
 
-You may make a shortcut of this application to the startup folder so it launches automatically.
+`keybridge.exe` has to run as a *Windows* process — named pipes are a Win32 API WSL can't touch directly. Put it somewhere on the Windows filesystem and make sure WSL can find it on `PATH`:
 
-## Usage
+```bash
+# from WSL, assuming keybridge.exe lives in C:\Users\<you>\bin\
+echo 'export PATH="$PATH:/mnt/c/Users/<you>/bin"' >> ~/.bashrc
+```
 
-### Basic Usage (SSH agent)
+### 2. Install `socat` in WSL
 
-1. Start `keybridge.exe`
-2. Right-click the icon on your taskbar
-3. You can get necessary information by selecting your interesting item in the menu
+```bash
+sudo apt install socat   # or your distro's equivalent
+```
 
-Note: Some SSH clients using Pageant Protocol, e.g., Putty, XShell and Jetbrains, needn't any setting in system wide, thus you can't see Pageant in the menu.
+### 3. Start the relay
 
-Check [Yubikey with WSL tutorial](doc/wsl_tutorial.md) to start using Yubikey with SSH on WSL.
+The agent's named pipe path is fixed: `\\.\pipe\openssh-ssh-agent` (Windows-side syntax) — from WSL, forward slashes work fine: `//./pipe/openssh-ssh-agent`.
 
-### Relay mode (new)
+```bash
+export SSH_AUTH_SOCK="$HOME/.ssh/agent.sock"
+rm -f "$SSH_AUTH_SOCK"
+(setsid socat UNIX-LISTEN:"$SSH_AUTH_SOCK",fork EXEC:"keybridge.exe relay //./pipe/openssh-ssh-agent" >/dev/null 2>&1 &)
+```
+
+Put those three lines in `~/.bashrc` (or equivalent) so `SSH_AUTH_SOCK` and the relay are set up in every new shell. The `setsid` detaches it from the shell so it survives after the script that started it exits; check first that nothing's already listening on the socket if you want to avoid stacking up duplicate `socat` processes on every new shell (`ss -lx | grep -q "$SSH_AUTH_SOCK" || (setsid socat ... &)`).
+
+### 4. Test it
+
+```bash
+ssh-add -l          # should list the certs keybridge.exe has loaded
+ssh -T git@github.com   # or any host set up with your public key
+```
+
+The Windows PIN/touch prompt you're used to will pop up exactly as it does for any other Windows SSH client — KeyBridge doesn't change that part at all.
+
+### Relay flags
 
 ```
 keybridge.exe relay [-p] [-s] [-ep] [-ei] [-v] <named pipe path>
@@ -71,47 +91,37 @@ keybridge.exe relay [-p] [-s] [-ep] [-ei] [-v] <named pipe path>
 
 | Flag | Meaning |
 |------|---------|
-| `-p`  | poll until the named pipe exists |
-| `-s`  | send a 0-byte message to the pipe after EOF on stdin |
-| `-ep` | terminate on EOF reading from the pipe, even if there's more to write |
-| `-ei` | terminate on EOF reading from stdin, even if there's more to write |
-| `-v`  | verbose output on stderr |
+| `-p`  | poll until the named pipe exists, instead of failing immediately |
+| `-s`  | send a 0-byte message to the pipe after EOF on stdin (signals "no more data" on a message-mode pipe) |
+| `-ep` | terminate on EOF reading from the pipe, even if there's still more to write |
+| `-ei` | terminate on EOF reading from stdin, even if there's still more to write |
+| `-v`  | verbose logging to stderr |
 
-Same flags as `npiperelay`, so any `socat ... EXEC:"npiperelay.exe ..."` command works unchanged with `EXEC:"keybridge.exe relay ..."`. To reach this binary's own SSH-agent pipe from WSL:
+These match `npiperelay`'s flags, so if you already have `socat ... EXEC:"npiperelay.exe ..."` commands lying around (for Docker Desktop's pipe, a Windows MySQL service, a Hyper-V serial console, etc.), they work unchanged with `keybridge.exe relay` swapped in — one relay binary instead of two.
 
-```bash
-export SSH_AUTH_SOCK=$HOME/.ssh/agent.sock
-socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork EXEC:"keybridge.exe relay //./pipe/openssh-ssh-agent" &
+## OpenSSH certificates
+
+OpenSSH certificates aren't the same format as the X.509 certificates in the Windows Certificate Store, so KeyBridge can't convert one into the other automatically. Instead, drop your OpenSSH certificate into your Windows user profile folder, named `<Certificate Common Name>-cert.pub` or `<Certificate Serial Number>-cert.pub`, and KeyBridge will pair it with the matching store certificate automatically.
+
+## Debug logging
+
+```
+setx WCSA_DEBUG 1
 ```
 
-(adjust the pipe path to whatever this binary is actually listening on — check the tray menu's Named Pipe entry for the exact path.)
+then reboot (environment variable changes need a fresh process tree to take effect reliably here). Reproduce the problem; the log lands at `%USERPROFILE%\WCSA_DEBUG.log`.
 
-### Work with Xshell
+## Building from source
 
-1. Install and run `keybridge.exe`
-2. Open the Properties dialog box of your session.
-3. From Category, select 'SSH', Select 'Use Xagent (SSH agent)' for passphrase handling.
-4. From Category, select 'Authentication' and select 'Public Key' as the authentication method.
+```bash
+go build .                                   # on Windows
+GOOS=windows GOARCH=amd64 go build .         # cross-compiled from Linux/WSL/macOS
+```
 
-### OpenSSH Certificates
-
-OpenSSH supports authentication using SSH certificates. Certificates contain a public key, identity information and are signed with a standard SSH key.
-
-Unlike TLS using X.509, OpenSSH uses a special certificate format, thus we can't convert your X.509 certificate into OpenSSH format.
-
-To deal with OpenSSH Certificates, this project introduces a public key override mechanism.
-
-If you want to work with OpenSSH certificates, you should put your OpenSSH Certificates in your `user profile` folder, rename them to `<Your Certificate Common Name>-cert.pub` or `<Your Certificate Serial Number>-cert.pub`.
-
-### Debug log
-
-1. Run `setx WCSA_DEBUG 1`
-2. Reboot to take effect
-3. Reproduce your problem
-4. The debug log is located in `%USERPROFILE%\WCSA_DEBUG.log`
+No `CGO_ENABLED` requirements, no external toolchain beyond Go itself.
 
 ## Credits & License
 
-KeyBridge is a fork of [buptczq/WinCryptSSHAgent](https://github.com/buptczq/WinCryptSSHAgent), licensed under the [Apache License 2.0](LICENSE) (Copyright 2019 BUPTCZQ). All SSH-agent, CryptoAPI/CNG, and tray-app code is theirs, unmodified except where noted (see `main.go`).
+KeyBridge is a fork of [buptczq/WinCryptSSHAgent](https://github.com/buptczq/WinCryptSSHAgent), licensed under the [Apache License 2.0](LICENSE) (Copyright 2019 BUPTCZQ). All SSH-agent, CryptoAPI/CNG signing, and tray-app code is theirs; `main.go` carries a notice marking the one addition made to it, per the license's requirements.
 
-The `relay` subcommand replicates the behavior (and CLI flags) of [jstarks/npiperelay](https://github.com/jstarks/npiperelay) (MIT License, © 2017 John Starks) as a design reference, but is an independent implementation written against `go-winio` rather than a copy of its code.
+The relay subcommand replicates the *behavior* (and CLI flags) of [jstarks/npiperelay](https://github.com/jstarks/npiperelay) (MIT License, © 2017 John Starks) as a design reference, but is an independent implementation written against `go-winio` — no npiperelay source was copied.

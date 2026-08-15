@@ -1,4 +1,4 @@
-# KeyBridge
+![KeyBridge](assets/logo.svg)
 
 KeyBridge integrates WSL into the same Windows security infrastructure your desktop SSH clients already use — the Windows Certificate Store, CryptoAPI/CNG, and PIV smart cards. It gives WSL a path to that infrastructure through the same agent and the same signing calls a native Windows SSH client already relies on.
 

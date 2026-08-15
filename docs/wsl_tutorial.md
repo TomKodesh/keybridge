@@ -70,7 +70,7 @@ Execute following commands, provide new PIN and PUK when prompted:
     fi
     ```
 
-    This is KeyBridge's built-in WSL2 mechanism (§5 of [`docs/FLOWS.md`](../docs/FLOWS.md)) — it needs the one-time elevated `-i` install step and a reboot. If you'd rather avoid that, KeyBridge's own [named-pipe relay](../README.md#using-the-named-pipe-relay) is a simpler alternative that needs no elevation at all.
+    This is KeyBridge's built-in WSL2 mechanism (§5 of [`FLOWS.md`](FLOWS.md)) — it needs the one-time elevated `-i` install step and a reboot. If you'd rather avoid that, KeyBridge's own [named-pipe relay](../README.md#using-the-named-pipe-relay) is a simpler alternative that needs no elevation at all.
 1. Run your WSL console and execute the command from the previous step.
 1. `ssh` into your target machine, authenticate with credentials used until now.
 1. Right-click KeyBridge's icon in the tray and select **Show Public Keys** then press OK.

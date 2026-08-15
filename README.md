@@ -30,7 +30,7 @@ KeyBridge is that path. It gives WSL access to the same agent and the same signi
 2. Right-click the tray icon to see connection info for whichever transport your SSH client needs (Pageant, named pipe, etc.). Most Windows SSH clients (PuTTY, XShell, JetBrains, Git for Windows) will just find it automatically via Pageant protocol; nothing to configure.
 3. For WSL specifically, see the relay section below.
 
-Setting up a PIV smart card (e.g. a YubiKey) for the first time is a separate, more involved process — see [`doc/wsl_tutorial.md`](doc/wsl_tutorial.md).
+Setting up a PIV smart card (e.g. a YubiKey) for the first time is a separate, more involved process — see [`docs/wsl_tutorial.md`](docs/wsl_tutorial.md).
 
 ## Using the named-pipe relay
 

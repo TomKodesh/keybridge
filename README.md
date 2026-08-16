@@ -110,10 +110,10 @@ OpenSSH certificates aren't the same format as the X.509 certificates in the Win
 ## Debug logging
 
 ```
-setx WCSA_DEBUG 1
+setx KB_DEBUG 1
 ```
 
-then reboot (environment variable changes need a fresh process tree to take effect reliably here). Reproduce the problem; the log lands at `%USERPROFILE%\WCSA_DEBUG.log`.
+then reboot (environment variable changes need a fresh process tree to take effect reliably here). Reproduce the problem; the log lands at `%USERPROFILE%\KB_DEBUG.log`.
 
 ## Building from source
 

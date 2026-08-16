@@ -14,8 +14,8 @@ flowchart TD
 
     ArgCheck -- no --> ParseFlags["flag.Parse()\n-i / -disable-capi / -disable-pin-cache"]
     ParseFlags --> DPI["SetProcessSystemDpiAware()"]
-    DPI --> DebugLog{"WCSA_DEBUG=1?"}
-    DebugLog -- yes --> RedirectLog["redirect stdout/stderr\nto %USERPROFILE%\\WCSA_DEBUG.log"]
+    DPI --> DebugLog{"KB_DEBUG=1?"}
+    DebugLog -- yes --> RedirectLog["redirect stdout/stderr\nto %USERPROFILE%\\KB_DEBUG.log"]
     DebugLog -- no --> InstallCheck
     RedirectLog --> InstallCheck{"-i flag set?"}
     InstallCheck -- yes --> Elevate["installService():\nregister Hyper-V Guest Communication\nService (elevates via UAC if needed)"]

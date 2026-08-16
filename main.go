@@ -3,8 +3,9 @@ package main
 // This file has been modified from the upstream WinCryptSSHAgent project
 // (https://github.com/buptczq/WinCryptSSHAgent, Apache License 2.0) as part
 // of KeyBridge: a `relay` subcommand was added (see relay.go) so this binary
-// can also act as a named-pipe-to-stdio relay, in addition to its original
-// SSH-agent behavior, which is otherwise unchanged.
+// can also act as a named-pipe-to-stdio relay in addition to its original
+// SSH-agent behavior; a few other lines were renamed for KeyBridge's own
+// branding (window/tray title, registry service name, debug-log env var).
 
 //go:generate goversioninfo -icon=assets/icon.ico
 
@@ -29,7 +30,7 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-const agentTitle = "KeyBridge v1.0.4"
+const agentTitle = "KeyBridge v1.0.5"
 
 var applications = []app.Application{
 	new(app.PubKeyView),
@@ -80,12 +81,12 @@ func installService() {
 }
 
 func initDebugLog() {
-	if os.Getenv("WCSA_DEBUG") == "1" {
+	if os.Getenv("KB_DEBUG") == "1" {
 		home, err := os.UserHomeDir()
 		if err != nil {
 			return
 		}
-		f, err := os.OpenFile(filepath.Join(home, "WCSA_DEBUG.log"), os.O_WRONLY|os.O_CREATE|os.O_SYNC|os.O_APPEND, 0664)
+		f, err := os.OpenFile(filepath.Join(home, "KB_DEBUG.log"), os.O_WRONLY|os.O_CREATE|os.O_SYNC|os.O_APPEND, 0664)
 		if err != nil {
 			return
 		}

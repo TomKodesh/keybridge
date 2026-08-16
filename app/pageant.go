@@ -12,7 +12,7 @@ type Pageant struct{}
 
 func (*Pageant) Run(ctx context.Context, handler func(conn io.ReadWriteCloser)) error {
 	debug := false
-	if os.Getenv("WCSA_DEBUG") == "1" {
+	if os.Getenv("KB_DEBUG") == "1" {
 		debug = true
 	}
 	win, err := utils.NewPageant(debug)

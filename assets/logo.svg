@@ -11,14 +11,10 @@
         --text: #22242a;
       }
       @media (prefers-color-scheme: dark) {
-        :root:not([data-theme="light"]) {
+        :root {
           --mark: #7f9fce;
           --text: #e8e6e1;
         }
-      }
-      :root[data-theme="dark"] {
-        --mark: #7f9fce;
-        --text: #e8e6e1;
       }
       .mark { fill: var(--mark); }
       .word {

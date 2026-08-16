@@ -58,7 +58,7 @@ Execute following commands, provide new PIN and PUK when prompted:
    a) If `socat` is not installed, install it before continuing. (Debian/Ubuntu example: `sudo apt install -y socat`)
 1. Right-click KeyBridge's icon in the tray and select **Show WSL Settings** (or **Show WSL2 / Linux On Hyper-V Settings** if using WSL2 and/or Hyper-V) then press OK.
 
-    A line like `export SSH_AUTH_SOCK=/mnt/c/Users/Jane/wincrypt-wsl.sock` will be copied into your clipboard for WSL. (The socket filename is `wincrypt-wsl.sock` regardless of the product rename — that's an internal artifact name the binary still writes, not a typo.)
+    A line like `export SSH_AUTH_SOCK=/mnt/c/Users/Jane/wincrypt-wsl.sock` will be copied into your clipboard for WSL — assuming your Windows build supports native AF_UNIX sockets (Win10 1803+). (The socket filename is `wincrypt-wsl.sock` regardless of the product rename — that's an internal artifact name the binary still writes, not a typo.) If it doesn't, KeyBridge falls back to a different mechanism entirely — a `socat`-bridged TCP listener at `/tmp/ssh-capi-agent.sock`, a different path with no "wincrypt" in the name at all. If what's actually in your clipboard doesn't match the block above, this fallback is almost certainly why — not a bug.
 
     For WSL2 / Hyper-V, lines like this will be copied into your clipboard:
     ```
@@ -66,7 +66,7 @@ Execute following commands, provide new PIN and PUK when prompted:
     ss -lnx | grep -q $SSH_AUTH_SOCK
     if [ $? -ne 0 ]; then
      rm -f $SSH_AUTH_SOCK
-      (setsid nohup socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork SOCKET-CONNECT:40:0:x0000x33332222x02000000x00000000 >/dev/null 2>&1)
+      (setsid nohup socat UNIX-LISTEN:$SSH_AUTH_SOCK,fork SOCKET-CONNECT:40:0:x0000x33332222x02000000x00000000 >/dev/null 2>&1) & disown
     fi
     ```
 

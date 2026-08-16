@@ -80,7 +80,7 @@
   <text class="grouplabel" x="420" y="78">Windows</text>
 
   <rect class="accent" x="425" y="315" width="240" height="60" rx="8"/>
-  <text class="mono" x="545" y="340" text-anchor="middle">keybridge.exe relay-server</text>
+  <text class="mono" x="545" y="340" text-anchor="middle">keybridge.exe (the agent)</text>
   <text class="mono" x="545" y="358" text-anchor="middle">\\.\pipe\openssh-ssh-agent</text>
 
   <line class="flow" x1="545" y1="315" x2="545" y2="270"/>

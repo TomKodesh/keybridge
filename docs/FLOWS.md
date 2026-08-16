@@ -1,6 +1,6 @@
 # KeyBridge — Application Flows
 
-This document maps every code path in KeyBridge: how the process decides what to run at startup, how each of the seven transports feeds into the same SSH-agent core, how a sign request actually reaches the smart card and comes back, and how the new relay subcommand behaves internally. It's meant to be read alongside the source, not instead of it — each diagram names the actual file/function it corresponds to.
+This document maps every code path in KeyBridge: how the process decides what to run at startup, how each of the six transports feeds into the same SSH-agent core, how a sign request actually reaches the smart card and comes back, and how the new relay subcommand behaves internally. It's meant to be read alongside the source, not instead of it — each diagram names the actual file/function it corresponds to.
 
 ## 1. Startup and mode selection
 
@@ -196,9 +196,9 @@ flowchart TD
     A["CAPIAgent.loadCerts()"] --> B["capi.LoadUserCerts():\nenumerate CurrentUser \\ My cert store"]
     B --> C{"has a usable private key?"}
     C -- no --> Skip1(["skip"])
-    C -- yes --> D["FilterCertificateEKU:\nAny / Client Auth / Smart Card Logon -> allow\nBitLocker / Server Auth only -> reject"]
+    C -- yes --> D["FilterCertificateEKU:\nAny / Client Auth / Smart Card Logon -> allow\nBitLocker / Server Auth (and nothing else\nmatched) -> reject"]
     D -- rejected --> Skip2(["skip, free the cert handle"])
-    D -- allowed --> E["build an ssh.PublicKey from the\nX.509 public key (RSA or ECDSA)"]
+    D -- "allowed (including certs with\nno EKU extension at all, or an EKU\ntype outside the tracked list --\nthe function defaults to allow,\nnot reject, on no match)" --> E["build an ssh.PublicKey from the\nX.509 public key (RSA or ECDSA)"]
     E --> F["wrap in rsaSigner / ecdsaSigner\n(defers actual signing to capi.Sign)"]
     F --> G["register as a plain SSH identity"]
     G --> H{"matching <serial>-cert.pub or\n<CommonName>-cert.pub in the\nuser profile folder?"}

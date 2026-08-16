@@ -24,15 +24,16 @@ func (s *NamedPipe) Run(ctx context.Context, handler func(conn io.ReadWriteClose
 	defer pipe.Close()
 
 	wg := new(sync.WaitGroup)
-	// context cancelled
+	// context cancelled: close the listener to unblock Accept below
 	go func() {
 		<-ctx.Done()
-		wg.Wait()
+		pipe.Close()
 	}()
 	// loop
 	for {
 		conn, err := pipe.Accept()
 		if err != nil {
+			wg.Wait()
 			if err != winio.ErrPipeListenerClosed {
 				return err
 			}

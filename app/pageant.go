@@ -25,6 +25,7 @@ func (*Pageant) Run(ctx context.Context, handler func(conn io.ReadWriteCloser)) 
 	for {
 		conn, err := win.AcceptCtx(ctx)
 		if err != nil {
+			wg.Wait()
 			if err != io.ErrClosedPipe {
 				return err
 			}

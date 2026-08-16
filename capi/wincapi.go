@@ -76,6 +76,9 @@ type cryptSignMessagePara struct {
 }
 
 func cryptSignMessage(para *cryptSignMessagePara, data []byte) (sign []byte, err error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("cryptSignMessage: empty data")
+	}
 	dataPtr := uintptr(unsafe.Pointer(&data[0]))
 	dataSize := uint32(len(data))
 	dataSizePtr := uintptr(unsafe.Pointer(&dataSize))
@@ -276,6 +279,17 @@ func Sign(alg string, cert *Certificate, data []byte) (*pkcs7.PKCS7, error) {
 		}
 	}
 
+	if disablePINCache && nCryptHandle != 0 {
+		// Reset the PIN cache regardless of whether signing below succeeds,
+		// since CryptSignMessage may have already prompted for and cached
+		// the PIN before failing for an unrelated reason.
+		defer func() {
+			if resetErr := nCryptSetPropertyString(nCryptHandle, NCRYPT_PIN_PROPERTY, "", 0); resetErr != nil {
+				fmt.Printf("Could not reset NCRYPT_PIN_PROPERTY: %v\n", resetErr)
+			}
+		}()
+	}
+
 	algptr, err := syscall.BytePtrFromString(alg)
 	if err != nil {
 		return nil, err
@@ -289,14 +303,6 @@ func Sign(alg string, cert *Certificate, data []byte) (*pkcs7.PKCS7, error) {
 	}, data)
 	if err != nil {
 		return nil, err
-	}
-
-	if disablePINCache && nCryptHandle != 0 {
-		// Set the PIN to NULL so we are prompted again
-		err = nCryptSetPropertyString(nCryptHandle, NCRYPT_PIN_PROPERTY, "", 0)
-		if err != nil {
-			return nil, fmt.Errorf("Could not set NCRYPT_PIN_PROPERTY: %v\n", err)
-		}
 	}
 
 	return pkcs7.Parse(sign)

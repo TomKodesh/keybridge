@@ -34,6 +34,7 @@ func (s *XShell) Run(ctx context.Context, handler func(conn io.ReadWriteCloser))
 	for {
 		conn, err := l.Accept()
 		if err != nil {
+			wg.Wait()
 			if err != io.ErrClosedPipe {
 				return err
 			}

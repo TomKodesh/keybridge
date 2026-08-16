@@ -29,7 +29,7 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-const agentTitle = "KeyBridge v1.0.2 (WinCryptSSHAgent fork)"
+const agentTitle = "KeyBridge v1.0.3 (WinCryptSSHAgent fork)"
 
 var applications = []app.Application{
 	new(app.PubKeyView),

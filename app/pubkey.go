@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/TomKodesh/keybridge/utils"
@@ -13,7 +14,11 @@ type PubKeyView struct {
 }
 
 func (s *PubKeyView) Run(ctx context.Context, handler func(conn io.ReadWriteCloser)) error {
-	s.ag = ctx.Value("agent").(agent.Agent)
+	ag, ok := ctx.Value("agent").(agent.Agent)
+	if !ok {
+		return fmt.Errorf("PubKeyView: no agent in context")
+	}
+	s.ag = ag
 	return nil
 }
 

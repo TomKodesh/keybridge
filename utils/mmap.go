@@ -52,12 +52,11 @@ func (m *memoryMapConn) Close() error {
 	if m.closed {
 		return io.ErrClosedPipe
 	}
-	if !m.closed {
-		if m.w.Len() > 0 {
-			m.req.response <- response{m.w.Bytes(), nil}
-		} else {
-			m.req.response <- response{err: io.ErrUnexpectedEOF}
-		}
+	m.closed = true
+	if m.w.Len() > 0 {
+		m.req.response <- response{m.w.Bytes(), nil}
+	} else {
+		m.req.response <- response{err: io.ErrUnexpectedEOF}
 	}
 	return nil
 }

@@ -234,6 +234,10 @@ func (s *pageantWindow) wndProc(hWnd windows.Handle, message uint32, wParam, lPa
 	// wait for response
 	resp := <-ch
 	if resp.err == nil {
+		if len(resp.data) > agentMaxMsglen {
+			println("Pageant: response too large for shared memory buffer", len(resp.data))
+			return
+		}
 		copy(sharedMemoryArray[:], resp.data)
 		return 1
 	}

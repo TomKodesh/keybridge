@@ -3,13 +3,13 @@
         "FileVersion": {
             "Major": 1,
             "Minor": 0,
-            "Patch": 2,
+            "Patch": 3,
             "Build": 0
         },
         "ProductVersion": {
             "Major": 1,
             "Minor": 0,
-            "Patch": 2,
+            "Patch": 3,
             "Build": 0
         },
         "FileFlagsMask": "3f",
@@ -29,7 +29,7 @@
         "OriginalFilename": "KeyBridge.exe",
         "PrivateBuild": "",
         "ProductName": "KeyBridge",
-        "ProductVersion": "1.0.2",
+        "ProductVersion": "1.0.3",
         "SpecialBuild": ""
     },
     "VarFileInfo": {

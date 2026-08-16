@@ -42,7 +42,7 @@ func createCygwinSocket(filename string, port int) ([]byte, error) {
 
 func cygwinHandshake(conn net.Conn, uuid []byte) error {
 	var cuuid [16]byte
-	_, err := conn.Read(cuuid[:])
+	_, err := io.ReadFull(conn, cuuid[:])
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func cygwinHandshake(conn net.Conn, uuid []byte) error {
 	}
 	conn.Write(uuid[:])
 	pidsUids := make([]byte, 12)
-	_, err = conn.Read(pidsUids[:])
+	_, err = io.ReadFull(conn, pidsUids)
 	if err != nil {
 		return err
 	}

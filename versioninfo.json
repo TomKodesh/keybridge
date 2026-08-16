@@ -3,13 +3,13 @@
         "FileVersion": {
             "Major": 1,
             "Minor": 0,
-            "Patch": 3,
+            "Patch": 4,
             "Build": 0
         },
         "ProductVersion": {
             "Major": 1,
             "Minor": 0,
-            "Patch": 3,
+            "Patch": 4,
             "Build": 0
         },
         "FileFlagsMask": "3f",
@@ -19,7 +19,7 @@
         "FileSubType": "00"
     },
     "StringFileInfo": {
-        "Comments": "SSH Agent based on Windows CryptoAPI, plus a named-pipe relay. Fork of WinCryptSSHAgent.",
+        "Comments": "SSH Agent based on Windows CryptoAPI, plus a named-pipe relay for WSL.",
         "CompanyName": "",
         "FileDescription": "KeyBridge",
         "FileVersion": "",
@@ -29,7 +29,7 @@
         "OriginalFilename": "KeyBridge.exe",
         "PrivateBuild": "",
         "ProductName": "KeyBridge",
-        "ProductVersion": "1.0.3",
+        "ProductVersion": "1.0.4",
         "SpecialBuild": ""
     },
     "VarFileInfo": {

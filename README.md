@@ -127,7 +127,7 @@ go generate ./...
 GOOS=windows GOARCH=amd64 go build -ldflags "-w -s -H=windowsgui" -trimpath -o keybridge.exe .
 ```
 
-`-H=windowsgui` matters, not just style: without it, the binary links as a console-subsystem app and pops up a visible console window every time it runs — wrong for a tray app. `go generate` embeds the tray icon and the version info shown in Windows' file-properties dialog; skipping it still produces a binary that runs, just without those.
+`-H=windowsgui` matters, not just style: without it, the binary links as a console-subsystem app and pops up a visible console window every time it runs — wrong for a tray app. `go generate` embeds the tray icon and the version info shown in Windows' file-properties dialog, reading `versioninfo.json` (committed in the repo root) to do it — **this step isn't optional**: KeyBridge loads its own tray icon from its own compiled-in resources at startup (`main.go`'s `initSystray`), so a binary built without running `go generate` first fails immediately with *"The specified image file did not contain a resource section"* instead of showing the tray icon.
 
 On Windows itself, running `build.bat` does all of the above for both architectures in one step. No `CGO_ENABLED` requirements either way, no external toolchain beyond Go itself.
 

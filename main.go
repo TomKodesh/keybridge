@@ -7,7 +7,7 @@ package main
 // SSH-agent behavior; a few other lines were renamed for KeyBridge's own
 // branding (window/tray title, registry service name, debug-log env var).
 
-//go:generate goversioninfo -icon=assets/icon.ico
+//go:generate goversioninfo -icon=assets/icon.ico -platform-specific
 
 import (
 	"context"

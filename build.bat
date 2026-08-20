@@ -3,11 +3,11 @@ setlocal
 
 @rem Build all by default
 if [%1]==[] (
-	go generate
+	go generate || exit /b 1
 	call :build 386 KeyBridge_32bit.exe
 	call :build amd64 KeyBridge.exe
 ) else (
-	go generate
+	go generate || exit /b 1
 	call :build %1 KeyBridge-%1.exe
 )
 goto :eof
@@ -19,6 +19,6 @@ set output=%2
 echo Build %arch% to %output%
 
 set GOARCH=%arch%
-go build -ldflags "-w -s -H=windowsgui" -trimpath -o %output%
+go build -ldflags "-w -s -H=windowsgui" -trimpath -o %output% || exit /b 1
 
 goto :eof

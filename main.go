@@ -30,7 +30,7 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-const agentTitle = "KeyBridge v1.0.5"
+const agentTitle = "KeyBridge v1.0.6"
 
 var applications = []app.Application{
 	new(app.PubKeyView),

@@ -69,11 +69,22 @@ sudo apt install socat   # or your distro's equivalent
 The agent's named pipe path is fixed: `\\.\pipe\openssh-ssh-agent` (Windows-side syntax) — from WSL, forward slashes work fine: `//./pipe/openssh-ssh-agent`.
 
 ```bash
-export SSH_AUTH_SOCK="$HOME/.ssh/agent.sock"
-ss -lx 2>/dev/null | grep -q "$SSH_AUTH_SOCK" || {
+export SSH_AUTH_SOCK=~/.ssh/agent.sock
+
+# Check if socket file exists AND if it's actually working
+if [ -S "$SSH_AUTH_SOCK" ] && ssh-add -l >/dev/null 2>&1; then
+    # Socket exists and works, do nothing
+    :
+else
+    # Remove stale socket if it exists
     rm -f "$SSH_AUTH_SOCK"
-    (setsid socat UNIX-LISTEN:"$SSH_AUTH_SOCK",fork EXEC:"keybridge.exe relay //./pipe/openssh-ssh-agent" >/dev/null 2>&1 &)
-}
+
+    # Kill any old KeyBridge processes
+    pkill -f "KeyBridge.exe relay" >/dev/null 2>&1
+
+    # Start the bridge
+    (setsid socat UNIX-LISTEN:"$SSH_AUTH_SOCK",fork EXEC:"/mnt/c/Users/t.kodesh/bin/KeyBridge.exe relay -ei -s //./pipe/openssh-ssh-agent",nofork &) >/dev/null 2>&1
+fi
 ```
 
 Put this in `~/.bashrc` (or equivalent) so `SSH_AUTH_SOCK` and the relay are set up in every new shell. The `ss -lx | grep -q` check is why it's safe to source repeatedly: without it, every new shell would `rm -f` the socket out from under the previous shell's still-running `socat` (orphaning that process — it keeps running, just no longer reachable) and spawn another one on top, stacking up duplicate `socat`/`keybridge.exe relay` processes with every terminal you open. With the guard, a shell only touches the socket and starts `socat` when nothing's listening on it yet. The `setsid` detaches the new process from the shell so it survives after the script that started it exits.

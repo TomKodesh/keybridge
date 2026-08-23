@@ -67,9 +67,9 @@ sudo apt install socat   # or your distro's equivalent
 ### 3. Start the relay
 
 The agent's named pipe path is fixed: `\\.\pipe\openssh-ssh-agent` (Windows-side syntax) — from WSL, forward slashes work fine: `//./pipe/openssh-ssh-agent`.
-Export the path to where you place the windows binary. Be sure to update teh <USER> placeholder below with your actual windows username.
+Export the path to where you place the windows binary. Be sure to update the user placeholder below with your actual windows username.
 ```bash
-export PATH="$PATH:/mnt/c/Users/<USER>/bin"
+export PATH="$PATH:/mnt/c/Users/<you>/bin"
 
 export SSH_AUTH_SOCK=~/.ssh/agent.sock
 

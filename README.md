@@ -67,8 +67,10 @@ sudo apt install socat   # or your distro's equivalent
 ### 3. Start the relay
 
 The agent's named pipe path is fixed: `\\.\pipe\openssh-ssh-agent` (Windows-side syntax) — from WSL, forward slashes work fine: `//./pipe/openssh-ssh-agent`.
-
+Export the path to where you place the windows binary. Be sure to update teh '<USER>' placeholder below with your actual windows username.
 ```bash
+export PATH="$PATH:/mnt/c/Users/<USER>/bin"
+
 export SSH_AUTH_SOCK=~/.ssh/agent.sock
 
 # Check if socket file exists AND if it's actually working
@@ -83,7 +85,7 @@ else
     pkill -f "KeyBridge.exe relay" >/dev/null 2>&1
 
     # Start the bridge
-    (setsid socat UNIX-LISTEN:"$SSH_AUTH_SOCK",fork EXEC:"/mnt/c/Users/t.kodesh/bin/KeyBridge.exe relay -ei -s //./pipe/openssh-ssh-agent",nofork &) >/dev/null 2>&1
+    (setsid socat UNIX-LISTEN:"$SSH_AUTH_SOCK",fork EXEC:"KeyBridge.exe relay -ei -s //./pipe/openssh-ssh-agent",nofork &) >/dev/null 2>&1
 fi
 ```
 
